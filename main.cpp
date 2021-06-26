@@ -30,7 +30,6 @@ void gotoxy(int,int);
 #define snake_tail_location_in_array 0
 #define initial_snake_head_location_in_array 1
 
-
 typedef struct Point{
     int x;
     int y;
@@ -48,7 +47,7 @@ Point snakeTurningPoints[playground_size] = {
 };
 
 int head= initial_snake_head_location_in_array;
-Direction snakeTailMovingDirection = RIGHT;
+Direction snakeTailMovingDirection;
 MovementLane snakeCalculatedLane;
 
 int m=4,score=0;
@@ -135,32 +134,33 @@ void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake()
             // x coordinates of adjacent values are same => snake moving in direction of x
             if((snakeTurningPoints[j+1].x - snakeTurningPoints[j].x) ==0)
             {
-                snakeCalculatedLane = X_LANE;
+                snakeCalculatedLane = MovementLane::Y_LANE;
                 Length_Between_2_Cordinates = snakeTurningPoints[j+1].y - snakeTurningPoints[j].y;
             }
             // y coordinates of adjacent values are same => snake moving in direction of y
             else if((snakeTurningPoints[j+1].y - snakeTurningPoints[j].y) ==0)
             {
-                snakeCalculatedLane = Y_LANE;
+                snakeCalculatedLane = MovementLane::X_LANE;
                 Length_Between_2_Cordinates = snakeTurningPoints[j+1].x - snakeTurningPoints[j].x;
             }
 
             // In initial loop, determine x or y direction in CHECK , determine up-down, or left-right using LENGTH_SIGN
+
             if(j==0){
-                if(snakeCalculatedLane == X_LANE){
+                if(snakeCalculatedLane == MovementLane::X_LANE){
                     if(Length_Between_2_Cordinates>0){
-                        snakeTailMovingDirection = RIGHT;
+                        snakeTailMovingDirection = Direction::RIGHT;
                     }
                     else{
-                        snakeTailMovingDirection = LEFT;
+                        snakeTailMovingDirection = Direction::LEFT;
                     }
                 }
-                else if(snakeCalculatedLane == Y_LANE){
+                else if(snakeCalculatedLane == MovementLane::Y_LANE){
                     if(Length_Between_2_Cordinates>0){
-                        snakeTailMovingDirection = DOWN;
+                        snakeTailMovingDirection = Direction::DOWN;
                     }
                     else{
-                        snakeTailMovingDirection = UP;
+                        snakeTailMovingDirection = Direction::UP;
                     }
                 }
             }
@@ -199,7 +199,7 @@ void draw_snake_OR_ClearSnake(int j,char show,int x)
         }
         else if(snakeCalculatedLane == Y_LANE)
         {
-            gotoxy(snakeTurningPoints[j].x, snakeTurningPoints[j].y +i);
+            gotoxy(snakeTurningPoints[j].x, snakeTurningPoints[j].y+i);
         }
 
         // Display appropriate Symbol
@@ -234,19 +234,18 @@ void draw_snake_OR_ClearSnake(int j,char show,int x)
 //*************************************************
 void update_tail()
 {
-    switch(snakeTailMovingDirection){
-        UP:
+    if(snakeTailMovingDirection == UP){
             snakeTurningPoints[0].y--;
-            break;
-        DOWN:
+    }
+    else if(snakeTailMovingDirection == DOWN){
             snakeTurningPoints[0].y++;
-            break;
-        RIGHT:
-            snakeTurningPoints[0].x++;
-            break;
-        LEFT:
+    }
+    else if(snakeTailMovingDirection == LEFT){
+
             snakeTurningPoints[0].x--;
-            break;
+    }
+    else if(snakeTailMovingDirection == RIGHT){
+            snakeTurningPoints[0].x++;
     }
 }
 //******************************************************
@@ -366,7 +365,7 @@ void Alive_or_dead()
 
         else if(snakeTurningPoints[head].y<=snakeTurningPoints[i].y &&
                 snakeTurningPoints[head].y>=snakeTurningPoints[i+1].y &&
-                snakeTurningPoints[head].x==snakeTurningPoints[i].y)
+                snakeTurningPoints[head].x==snakeTurningPoints[i].x)
         {
             breakk=true;
         }

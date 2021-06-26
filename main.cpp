@@ -6,17 +6,52 @@
 using namespace std;
 
 void draw_ground();
-void foodcheck();
+void check_food_status();
 void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake();
 void draw_snake_OR_ClearSnake(int j,char show,int x);
 void update_tail();
 void Alive_or_dead();
 void take_input();
-
 void gotoxy(int,int);
 
-int   foodx=15,foody=19,head=1,m=4,score=0; //INITIAL STARTING VALUES
-int   cordx[800]= {10,10},cordy[800]= {5,10};
+#define initial_food_x 15
+#define initial_food_y 19
+
+#define initial_snake_tail_x 5
+#define initial_snake_head_x 10
+
+#define initial_snake_tail_y 10
+#define initial_snake_head_y 10
+
+#define playground_x_width 40
+#define playground_y_height 20
+#define playground_size (playground_x_width*playground_y_height)
+
+#define snake_tail_location_in_array 0
+#define initial_snake_head_location_in_array 1
+
+
+typedef struct Point{
+    int x;
+    int y;
+} Point;
+
+enum MovementLane {X_LANE, Y_LANE};
+enum Direction { UP,DOWN,LEFT,RIGHT};
+
+//INITIAL STARTING VALUES
+Point food = {initial_food_x, initial_food_y};
+
+Point snakeTurningPoints[playground_size] = {
+    {initial_snake_tail_x,initial_snake_tail_y},
+    {initial_snake_head_x,initial_snake_head_y},
+};
+
+int head= initial_snake_head_location_in_array;
+Direction snakeTailMovingDirection = RIGHT;
+MovementLane snakeCalculatedLane;
+
+int m=4,score=0;
 
 int   flag, Length_Between_2_Cordinates,  check,        Length_Sign;
 bool  InputFailed=true,breakk=false;
@@ -27,7 +62,7 @@ int main()
     draw_ground();
     while(1)
     {
-        foodcheck();
+        check_food_status();
         Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake();
         update_tail();
         Alive_or_dead();
@@ -42,9 +77,9 @@ int main()
     system("cls");
 
     draw_ground();
-    gotoxy(10,5);
+    gotoxy(5,10);
     cout<<"GAME OVER";
-    gotoxy(11,5);
+    gotoxy(5,11);
     cout<<"YOUR SCORE IS:   "<<score;
     _sleep(5000);
 
@@ -53,14 +88,16 @@ int main()
 //****************************************************************
 void draw_ground()
 {
-    for(int x=0; x<=20; x++)
+    for(int y=0; y<=playground_y_height; y++)
     {
-        for(int y=0; y<=40; y++)
+        for(int x=0; x<=playground_x_width; x++)
         {
-            if(x==0 || x==20 || y==0 || y==40)
+            // Draw * on border pixels
+            if(x==0 || x==playground_x_width || y==0 || y==playground_y_height)
             {
                 cout<<'*';
             }
+            // Draw empty space on non-border pixels
             else
             {
                 cout<<" ";
@@ -76,41 +113,58 @@ void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake()
     {
         for(int j=0; j<head; j++)
         {
-            if(cordx[1]-cordx[0]==0 && cordy[1]-cordy[0]==0)
+            // If the tail has come to end, remove it be shifting all values in array to left
+            // And skip for this turn
+            if(snakeTurningPoints[1].x - snakeTurningPoints[0].x ==0 &&
+               snakeTurningPoints[1].y - snakeTurningPoints[0].y ==0)
             {
                 for(int i=0; i<=head; i++)
                 {
-                    cordx[i]=cordx[i+1];
-                    cordy[i]=cordy[i+1];
+                    snakeTurningPoints[i].x = snakeTurningPoints[i+1].x;
+                    snakeTurningPoints[i].y = snakeTurningPoints[i+1].y;
                 }
 
+                // Updated head location and J value
                 head--;
                 j--;
                 continue;
             }
 
 
-            if(cordx[j+1]-cordx[j]==0)
+            // Determine direction of snake here
+            // x coordinates of adjacent values are same => snake moving in direction of x
+            if((snakeTurningPoints[j+1].x - snakeTurningPoints[j].x) ==0)
             {
-                Length_Between_2_Cordinates=cordy[j+1]-cordy[j];
-                flag=1;
+                snakeCalculatedLane = X_LANE;
+                Length_Between_2_Cordinates = snakeTurningPoints[j+1].y - snakeTurningPoints[j].y;
             }
-            else if(cordy[j+1]-cordy[j]==0)
+            // y coordinates of adjacent values are same => snake moving in direction of y
+            else if((snakeTurningPoints[j+1].y - snakeTurningPoints[j].y) ==0)
             {
-                Length_Between_2_Cordinates=cordx[j+1]-cordx[j];
-                flag=2;
+                snakeCalculatedLane = Y_LANE;
+                Length_Between_2_Cordinates = snakeTurningPoints[j+1].x - snakeTurningPoints[j].x;
             }
-            //////////////////////////////////////////////////
-            if(j==0 && flag==1)
-            {
-                check=1;
-                Length_Sign=Length_Between_2_Cordinates;
+
+            // In initial loop, determine x or y direction in CHECK , determine up-down, or left-right using LENGTH_SIGN
+            if(j==0){
+                if(snakeCalculatedLane == X_LANE){
+                    if(Length_Between_2_Cordinates>0){
+                        snakeTailMovingDirection = RIGHT;
+                    }
+                    else{
+                        snakeTailMovingDirection = LEFT;
+                    }
+                }
+                else if(snakeCalculatedLane == Y_LANE){
+                    if(Length_Between_2_Cordinates>0){
+                        snakeTailMovingDirection = DOWN;
+                    }
+                    else{
+                        snakeTailMovingDirection = UP;
+                    }
+                }
             }
-            if(j==0 && flag==2)
-            {
-                check=2;
-                Length_Sign=Length_Between_2_Cordinates;
-            }
+
             //////////////////////////////////////////////////
 
             if(x==1)
@@ -138,15 +192,17 @@ void draw_snake_OR_ClearSnake(int j,char show,int x)
 
     while(1)
     {
-        if(flag==1)
+        // Goto specific Pixel
+        if(snakeCalculatedLane == X_LANE)
         {
-            gotoxy(cordx[j],cordy[j]+i);
+            gotoxy(snakeTurningPoints[j].x+i ,snakeTurningPoints[j].y);
         }
-        else if(flag==2)
+        else if(snakeCalculatedLane == Y_LANE)
         {
-            gotoxy(cordx[j]+i,cordy[j]);
+            gotoxy(snakeTurningPoints[j].x, snakeTurningPoints[j].y +i);
         }
 
+        // Display appropriate Symbol
         if(x==1 && j==head-1 && i==Length_Between_2_Cordinates)
         {
             cout<<'$';
@@ -156,6 +212,7 @@ void draw_snake_OR_ClearSnake(int j,char show,int x)
             cout<<show;
         }
 
+        // Find if we should continue or break the display
         if(Length_Between_2_Cordinates>0)
         {
             i++;
@@ -177,27 +234,19 @@ void draw_snake_OR_ClearSnake(int j,char show,int x)
 //*************************************************
 void update_tail()
 {
-    if(check==1)
-    {
-        if(Length_Sign>0)
-        {
-            cordy[0]++;
-        }
-        else
-        {
-            cordy[0]--;
-        }
-    }
-    else if(check==2)
-    {
-        if(Length_Sign>0)
-        {
-            cordx[0]++;
-        }
-        else
-        {
-            cordx[0]--;
-        }
+    switch(snakeTailMovingDirection){
+        UP:
+            snakeTurningPoints[0].y--;
+            break;
+        DOWN:
+            snakeTurningPoints[0].y++;
+            break;
+        RIGHT:
+            snakeTurningPoints[0].x++;
+            break;
+        LEFT:
+            snakeTurningPoints[0].x--;
+            break;
     }
 }
 //******************************************************
@@ -206,8 +255,8 @@ void take_input()
     if(_kbhit())
     {
         InputFailed=false;
-        cordx[head+1]=0;
-        cordy[head+1]=0;
+        snakeTurningPoints[head+1].x = 0;
+        snakeTurningPoints[head+1].y = 0;
         char c=getch();
 
         if     (c=='w' && m!=1 && m!=2)
@@ -234,59 +283,59 @@ void take_input()
         if(InputFailed==false)
         {
             head++;
-            cordx[head]=cordx[head]+cordx[head-1];
-            cordy[head]=cordy[head]+cordy[head-1];
+            snakeTurningPoints[head].x = snakeTurningPoints[head].x + snakeTurningPoints[head-1].x;
+            snakeTurningPoints[head].y = snakeTurningPoints[head].y + snakeTurningPoints[head-1].y;
         }
     }
 
     if     (m==1)
     {
-        cordx[head]--;
+        snakeTurningPoints[head].y--;
     }
     else if(m==2)
     {
-        cordx[head]++;
+        snakeTurningPoints[head].y++;
     }
     else if(m==3)
     {
-        cordy[head]--;
+        snakeTurningPoints[head].x--;
     }
     else
     {
-        cordy[head]++;
+        snakeTurningPoints[head].x++;
     }
 }
 //***********************************************************************
 
-void foodcheck()
+void check_food_status()
 {
-    if(cordx[head]==foodx && cordy[head]==foody)
+    if(snakeTurningPoints[head].x == food.x && snakeTurningPoints[head].y == food.y)
     {
-        if(cordx[1]>cordx[0])
+        if(snakeTurningPoints[1].x > snakeTurningPoints[0].x)
         {
-            cordx[0]--;
+            snakeTurningPoints[0].x--;
         }
-        else if(cordx[1]<cordx[0])
+        else if(snakeTurningPoints[1].x < snakeTurningPoints[0].x)
         {
-            cordx[0]++;
+            snakeTurningPoints[0].x++;
         }
-        else if(cordy[1]>cordy[0])
+        else if(snakeTurningPoints[1].y > snakeTurningPoints[0].y)
         {
-            cordy[0]--;
+            snakeTurningPoints[0].y--;
         }
-        else if(cordy[1]<cordy[0])
+        else if(snakeTurningPoints[1].y < snakeTurningPoints[0].y)
         {
-            cordy[0]++;
+            snakeTurningPoints[0].y++;
         }
 
         srand(time(NULL));
-        foodx=rand()%19+1;
-        foody=rand()%39+1;
+        food.x=rand()% (playground_x_width-1) + 1;
+        food.y=rand()% (playground_y_height-1) + 1;
 
         score++;
     }
 
-    gotoxy(foodx,foody);
+    gotoxy(food.x,food.y);
     cout<<'%';
 }
 
@@ -294,16 +343,39 @@ void Alive_or_dead()
 {
     for(int i=0; i<head-1; i++)
     {
-        if     (cordx[head]>=cordx[i] && cordx[head]<=cordx[i+1] && cordy[head]==cordy[i])       breakk=true;
+        if(snakeTurningPoints[head].x >= snakeTurningPoints[i].x &&
+           snakeTurningPoints[head].x<=snakeTurningPoints[i+1].x &&
+           snakeTurningPoints[head].y==snakeTurningPoints[i].y)
+        {
+            breakk=true;
+        }
 
-        else if(cordy[head]>=cordy[i] && cordy[head]<=cordy[i+1] && cordx[head]==cordx[i])       breakk=true;
+        else if(snakeTurningPoints[head].y>=snakeTurningPoints[i].y &&
+                snakeTurningPoints[head].y<=snakeTurningPoints[i+1].y &&
+                snakeTurningPoints[head].x==snakeTurningPoints[i].x)
+        {
+            breakk=true;
+        }
 
-        else if(cordx[head]<=cordx[i] && cordx[head]>=cordx[i+1] && cordy[head]==cordy[i])       breakk=true;
+        else if(snakeTurningPoints[head].x<=snakeTurningPoints[i].x &&
+                snakeTurningPoints[head].x>=snakeTurningPoints[i+1].x &&
+                snakeTurningPoints[head].y==snakeTurningPoints[i].y)
+        {
+            breakk=true;
+        }
 
-        else if(cordy[head]<=cordy[i] && cordy[head]>=cordy[i+1] && cordx[head]==cordx[i])       breakk=true;
+        else if(snakeTurningPoints[head].y<=snakeTurningPoints[i].y &&
+                snakeTurningPoints[head].y>=snakeTurningPoints[i+1].y &&
+                snakeTurningPoints[head].x==snakeTurningPoints[i].y)
+        {
+            breakk=true;
+        }
     }
 
-    if(cordx[head]==0 || cordx[head]==20 || cordy[head]==0 || cordy[head]==40)
+    if(snakeTurningPoints[head].x==0 ||
+        snakeTurningPoints[head].x==playground_x_width ||
+        snakeTurningPoints[head].y==0 ||
+        snakeTurningPoints[head].y==playground_y_height)
     {
         breakk=true;
     }
@@ -312,6 +384,6 @@ void Alive_or_dead()
 
 void gotoxy(int cordx,int cordy)
 {
-    COORD coord= {cordy,cordx};
+    COORD coord= {cordx,cordy};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),coord);
 }

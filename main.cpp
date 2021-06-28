@@ -5,16 +5,6 @@
 
 using namespace std;
 
-void draw_ground();
-void check_food_status();
-void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake();
-void draw_snake_between_2_points(int startingPoint);
-void clear_snake_between_2_points(int startingPoint);
-void update_tail();
-void Alive_or_dead();
-void take_input();
-void gotoxy(int,int);
-
 #define initial_food_x 15
 #define initial_food_y 19
 
@@ -28,7 +18,8 @@ void gotoxy(int,int);
 #define playground_y_height 20
 #define playground_size (playground_x_width*playground_y_height)
 
-#define snake_tail_location_in_array 0
+#define snake_tail_loc 0
+#define snake_tail_adjacent 1
 #define initial_snake_head_location_in_array 1
 
 typedef struct Point{
@@ -38,6 +29,22 @@ typedef struct Point{
 
 enum MovementLane {X_LANE, Y_LANE};
 enum Direction { UP,DOWN,LEFT,RIGHT};
+
+// helper functions
+MovementLane calculate_snake_lane(int startingPoint);
+int length_between_2_cordinates(int startingPoint);
+void gotoxy(int,int);
+
+// Game functions
+void draw_ground();
+void check_food_status();
+void draw_snake();
+void clear_snake();
+void draw_snake_between_2_points(int startingPoint);
+void clear_snake_between_2_points(int startingPoint);
+void update_tail();
+void Alive_or_dead();
+void take_input();
 
 //INITIAL STARTING VALUES
 Point food = {initial_food_x, initial_food_y};
@@ -63,7 +70,8 @@ int main()
     while(1)
     {
         check_food_status();
-        Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake();
+        draw_snake();
+        clear_snake();
         update_tail();
         Alive_or_dead();
         if(breakk==true)
@@ -107,83 +115,49 @@ void draw_ground()
     }
 }
 //*******************************************************************
-void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake()
-{
-    for(int x=1; x<=2; x++)
+MovementLane calculate_snake_lane(int startingPoint){
+    // Determine direction of snake here
+    // x coordinates of adjacent values are same => snake moving in direction of x
+    if((snakeTurningPoints[startingPoint+1].x - snakeTurningPoints[startingPoint].x) ==0)
     {
-        for(int j=0; j<head; j++)
-        {
-            // If the tail has come to end, remove it by shifting all values in array to left
-            // And skip for this turn
-            if(snakeTurningPoints[1].x - snakeTurningPoints[0].x ==0 &&
-               snakeTurningPoints[1].y - snakeTurningPoints[0].y ==0)
-            {
-                for(int i=0; i<=head; i++)
-                {
-                    snakeTurningPoints[i].x = snakeTurningPoints[i+1].x;
-                    snakeTurningPoints[i].y = snakeTurningPoints[i+1].y;
-                }
-
-                // Updated head location and J value
-                head--;
-                j--;
-                continue;
-            }
-
-
-            // Determine direction of snake here
-            // x coordinates of adjacent values are same => snake moving in direction of x
-            if((snakeTurningPoints[j+1].x - snakeTurningPoints[j].x) ==0)
-            {
-                snakeCalculatedLane = MovementLane::Y_LANE;
-                Length_Between_2_Cordinates = snakeTurningPoints[j+1].y - snakeTurningPoints[j].y;
-            }
-            // y coordinates of adjacent values are same => snake moving in direction of y
-            else if((snakeTurningPoints[j+1].y - snakeTurningPoints[j].y) ==0)
-            {
-                snakeCalculatedLane = MovementLane::X_LANE;
-                Length_Between_2_Cordinates = snakeTurningPoints[j+1].x - snakeTurningPoints[j].x;
-            }
-
-            // In initial loop, determine x or y direction in CHECK , determine up-down, or left-right using LENGTH_SIGN
-
-            if(j==0){
-                if(snakeCalculatedLane == MovementLane::X_LANE){
-                    if(Length_Between_2_Cordinates>0){
-                        snakeTailMovingDirection = Direction::RIGHT;
-                    }
-                    else{
-                        snakeTailMovingDirection = Direction::LEFT;
-                    }
-                }
-                else if(snakeCalculatedLane == MovementLane::Y_LANE){
-                    if(Length_Between_2_Cordinates>0){
-                        snakeTailMovingDirection = Direction::DOWN;
-                    }
-                    else{
-                        snakeTailMovingDirection = Direction::UP;
-                    }
-                }
-            }
-
-            //////////////////////////////////////////////////
-
-            if(x==1)
-            {
-                draw_snake_between_2_points(j);
-            }
-            if(x==2)
-            {
-                clear_snake_between_2_points(j);
-            }
-        }
-        if(x==1)
-        {
-            _sleep(90);
-        }
+        return MovementLane::Y_LANE;
     }
-
+    // y coordinates of adjacent values are same => snake moving in direction of y
+    else if((snakeTurningPoints[startingPoint+1].y - snakeTurningPoints[startingPoint].y) ==0)
+    {
+        return MovementLane::X_LANE;
+    }
 }
+
+int length_between_2_cordinates(int startingPoint){
+    if(calculate_snake_lane(startingPoint) == MovementLane::Y_LANE){
+        return snakeTurningPoints[startingPoint+1].y - snakeTurningPoints[startingPoint].y;
+    }
+    else{
+        return snakeTurningPoints[startingPoint+1].x - snakeTurningPoints[startingPoint].x;
+    }
+}
+
+void draw_snake()
+{
+    for(int j=0; j<head; j++)
+    {
+        snakeCalculatedLane = calculate_snake_lane(j);
+        Length_Between_2_Cordinates = length_between_2_cordinates(j);
+        draw_snake_between_2_points(j);
+    }
+    _sleep(90);
+}
+void clear_snake(){
+
+    for(int j=0; j<head; j++)
+    {
+        snakeCalculatedLane = calculate_snake_lane(j);
+        Length_Between_2_Cordinates = length_between_2_cordinates(j);
+        clear_snake_between_2_points(j);
+    }
+}
+
 //**********************************************************
 void draw_snake_between_2_points(int startingPoint)
 {
@@ -244,6 +218,26 @@ void clear_snake_between_2_points(int startingPoint)
 //*************************************************
 void update_tail()
 {
+    MovementLane snakeTailLane = calculate_snake_lane(0);
+    int lengthBetweenTailAdjacents = length_between_2_cordinates(0);
+
+    if(snakeTailLane == MovementLane::X_LANE){
+        if(lengthBetweenTailAdjacents > 0){
+            snakeTailMovingDirection = Direction::RIGHT;
+        }
+        else{
+            snakeTailMovingDirection = Direction::LEFT;
+        }
+    }
+    else if(snakeTailLane == MovementLane::Y_LANE){
+        if(lengthBetweenTailAdjacents > 0){
+            snakeTailMovingDirection = Direction::DOWN;
+        }
+        else{
+            snakeTailMovingDirection = Direction::UP;
+        }
+    }
+
     if(snakeTailMovingDirection == UP){
             snakeTurningPoints[0].y--;
     }
@@ -257,6 +251,22 @@ void update_tail()
     else if(snakeTailMovingDirection == RIGHT){
             snakeTurningPoints[0].x++;
     }
+
+    // If the tail has come to end, remove it by shifting all values in array to left
+    // And skip for this turn
+    if(snakeTurningPoints[1].x - snakeTurningPoints[0].x ==0 &&
+       snakeTurningPoints[1].y - snakeTurningPoints[0].y ==0)
+    {
+        for(int i=0; i<=head; i++)
+        {
+            snakeTurningPoints[i].x = snakeTurningPoints[i+1].x;
+            snakeTurningPoints[i].y = snakeTurningPoints[i+1].y;
+        }
+
+        // Updated head location and J value
+        head--;
+    }
+
 }
 //******************************************************
 void take_input()

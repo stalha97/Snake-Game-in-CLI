@@ -8,7 +8,8 @@ using namespace std;
 void draw_ground();
 void check_food_status();
 void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake();
-void draw_snake_OR_ClearSnake(int j,char show,int x);
+void draw_snake_between_2_points(int startingPoint);
+void clear_snake_between_2_points(int startingPoint);
 void update_tail();
 void Alive_or_dead();
 void take_input();
@@ -112,7 +113,7 @@ void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake()
     {
         for(int j=0; j<head; j++)
         {
-            // If the tail has come to end, remove it be shifting all values in array to left
+            // If the tail has come to end, remove it by shifting all values in array to left
             // And skip for this turn
             if(snakeTurningPoints[1].x - snakeTurningPoints[0].x ==0 &&
                snakeTurningPoints[1].y - snakeTurningPoints[0].y ==0)
@@ -169,13 +170,11 @@ void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake()
 
             if(x==1)
             {
-                show='O';
-                draw_snake_OR_ClearSnake(j,show,x);
+                draw_snake_between_2_points(j);
             }
             if(x==2)
             {
-                show=' ';
-                draw_snake_OR_ClearSnake(j,show,x);
+                clear_snake_between_2_points(j);
             }
         }
         if(x==1)
@@ -186,51 +185,62 @@ void Measure_Values_Then_GOTO_draw_snake_OR_ClearSnake()
 
 }
 //**********************************************************
-void draw_snake_OR_ClearSnake(int j,char show,int x)
+void draw_snake_between_2_points(int startingPoint)
 {
     int i=0;
-
     while(1)
     {
-        // Goto specific Pixel
+        // Goto each Pixel with increments
         if(snakeCalculatedLane == X_LANE)
-        {
-            gotoxy(snakeTurningPoints[j].x+i ,snakeTurningPoints[j].y);
-        }
+            gotoxy(snakeTurningPoints[startingPoint].x+i ,snakeTurningPoints[startingPoint].y);
         else if(snakeCalculatedLane == Y_LANE)
-        {
-            gotoxy(snakeTurningPoints[j].x, snakeTurningPoints[j].y+i);
-        }
+            gotoxy(snakeTurningPoints[startingPoint].x, snakeTurningPoints[startingPoint].y+i);
 
-        // Display appropriate Symbol
-        if(x==1 && j==head-1 && i==Length_Between_2_Cordinates)
-        {
+        // Display Head Symbol if it is last line ( head-1 to head) and it is the last point(head)
+        if(startingPoint==head-1 && i==Length_Between_2_Cordinates)
             cout<<'$';
-        }
+        // Display Body Symbol
         else
-        {
-            cout<<show;
-        }
+            cout<<'O';
 
-        // Find if we should continue or break the display
-        if(Length_Between_2_Cordinates>0)
-        {
+        // Break if all the pixels between 2 points are drawn
+        if(Length_Between_2_Cordinates>0){
             i++;
-            if(i==Length_Between_2_Cordinates+1)
-            {
-                break;
-            }
+            if(i==Length_Between_2_Cordinates+1) break;
         }
-        if(Length_Between_2_Cordinates<0)
-        {
+        if(Length_Between_2_Cordinates<0){
             i--;
-            if(i==Length_Between_2_Cordinates-1)
-            {
-                break;
-            }
+            if(i==Length_Between_2_Cordinates-1) break;
         }
     }
 }
+void clear_snake_between_2_points(int startingPoint)
+{
+
+    int i=0;
+    while(1)
+    {
+        // Goto each Pixel with increments
+        if(snakeCalculatedLane == X_LANE)
+            gotoxy(snakeTurningPoints[startingPoint].x+i ,snakeTurningPoints[startingPoint].y);
+        else if(snakeCalculatedLane == Y_LANE)
+            gotoxy(snakeTurningPoints[startingPoint].x, snakeTurningPoints[startingPoint].y+i);
+
+        // Clear snake
+        cout<<' ';
+
+        // Break if all the pixels between 2 points are drawn
+        if(Length_Between_2_Cordinates>0){
+            i++;
+            if(i==Length_Between_2_Cordinates+1) break;
+        }
+        if(Length_Between_2_Cordinates<0){
+            i--;
+            if(i==Length_Between_2_Cordinates-1) break;
+        }
+    }
+}
+
 //*************************************************
 void update_tail()
 {
